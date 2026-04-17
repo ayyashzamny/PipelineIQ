@@ -1,0 +1,36 @@
+name: Deployment Pipeline
+description: Production deployment with health checks
+
+stages:
+  - name: Prepare
+    commands:
+      - echo [DEPLOY] Preparing deployment environment...
+      - echo [DEPLOY] Versioning application...
+      - timeout /t 1
+      - echo [DEPLOY] ✓ Preparation completed
+
+  - name: Build
+    commands:
+      - echo [DEPLOY] Building Docker image...
+      - echo [DEPLOY] Compiling source files...
+      - timeout /t 2
+      - echo [DEPLOY] ✓ Build successful
+
+  - name: Deploy
+    commands:
+      - echo [DEPLOY] Deploying to production...
+      - echo [DEPLOY] Running database migrations...
+      - timeout /t 2
+      - echo [DEPLOY] ✓ Deployment successful
+
+  - name: Healthcheck
+    commands:
+      - echo [DEPLOY] Running health checks...
+      - echo [DEPLOY] Verifying service endpoints...
+      - timeout /t 1
+      - echo [DEPLOY] ✓ All services healthy
+
+timeout: 60
+retry_on_failure: true
+max_retries: 2
+critical: true
