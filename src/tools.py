@@ -9,6 +9,7 @@ import logging
 from datetime import datetime
 
 from src.observability import get_observability_logger
+from src.email_service import EmailService
 
 logger = logging.getLogger(__name__)
 obs_logger = get_observability_logger()
@@ -378,37 +379,55 @@ Recommendations:
         return message
     
     @staticmethod
-    def send_notification(recipient: str, message: str, 
-                         channel: str = "email") -> bool:
+    def send_notification(pipeline_id: str, failed_stage: str,
+                         error_message: str, ai_analysis: dict) -> bool:
         """
-        Send notification to recipient.
+        Send email notification with failure report.
         
         Args:
-            recipient: Recipient address/ID
-            message: Message to send
-            channel: Notification channel (email, slack, etc)
+            pipeline_id: Execution ID
+            failed_stage: Failed pipeline stage
+            error_message: Error details
+            ai_analysis: Dictionary with analysis and recommendations
         
         Returns:
             Success status
         """
         obs_logger.log_tool_call("NotificationAgent", "send_notification", {
-            "recipient": recipient,
-            "channel": channel,
-            "message_length": len(message)
+            "pipeline_id": pipeline_id,
+            "failed_stage": failed_stage,
+            "has_analysis": bool(ai_analysis)
         })
         
         try:
-            # Placeholder for actual notification logic
-            # In real implementation, would use email/Slack/etc
-            logger.info(f"[{channel.upper()}] Sending to {recipient}")
-            obs_logger.log_tool_result(
-                "NotificationAgent", "send_notification",
-                f"Sent via {channel}"
+            email_service = EmailService()
+            success = email_service.send_failure_report(
+                pipeline_id=pipeline_id,
+                failed_stage=failed_stage,
+                error_message=error_message,
+                ai_analysis=ai_analysis
             )
-            return True
+            
+            if success:
+                obs_logger.log_tool_result(
+                    "NotificationAgent", "send_notification",
+                    f"Email sent successfully to {email_service.recipient}"
+                )
+                logger.info(f"✅ NOTIFICATION SENT - Email delivered for pipeline {pipeline_id}")
+            else:
+                obs_logger.log_tool_result(
+                    "NotificationAgent", "send_notification",
+                    "", "Email service returned false"
+                )
+                logger.warning(f"⚠️ Email sending failed for pipeline {pipeline_id}")
+            
+            return success
+            
         except Exception as e:
+            error_msg = str(e)
             obs_logger.log_tool_result(
                 "NotificationAgent", "send_notification",
-                "", str(e)
+                "", error_msg
             )
+            logger.error(f"❌ NOTIFICATION FAILED - {error_msg}")
             return False

@@ -14,6 +14,7 @@ from src.tools import (
 )
 from src.config import Config
 from src.observability import get_observability_logger
+from src.state_management import global_context
 
 logger = logging.getLogger(__name__)
 obs_logger = get_observability_logger()
@@ -269,6 +270,44 @@ class MultiAgentPipeline:
         
         try:
             result = self.crew.kickoff()
+            
+            # Check if failure was detected and send email
+            result_str = str(result).lower()
+            if "failed" in result_str or "error" in result_str or "failure" in result_str:
+                logger.info("\n" + "="*70)
+                logger.info("FAILURE DETECTED - Sending email notification...")
+                logger.info("="*70)
+                
+                # Extract pipeline info from context
+                pipeline_state = global_context.get_pipeline_state()
+                execution_id = pipeline_state.execution_id if pipeline_state else "unknown"
+                
+                # Prepare AI analysis data
+                ai_analysis = {
+                    "analysis": "Pipeline execution detected failures. Review error details and recommendations below.",
+                    "recommendations": [
+                        "Check build/lint/test stage logs",
+                        "Verify environment configuration",
+                        "Review recent code changes",
+                        "Run diagnostics on failed stage"
+                    ],
+                    "model": "Ollama (llama2:latest)"
+                }
+                
+                # Import and use NotificationTools to send email
+                from src.tools import NotificationTools
+                success = NotificationTools.send_notification(
+                    pipeline_id=execution_id,
+                    failed_stage="Pipeline Execution",
+                    error_message=str(result)[:500],  # First 500 chars of error
+                    ai_analysis=ai_analysis
+                )
+                
+                if success:
+                    logger.info("✅ EMAIL NOTIFICATION SENT SUCCESSFULLY")
+                else:
+                    logger.warning("⚠️  Email notification could not be sent - check configuration")
+                logger.info("="*70)
             
             obs_logger.log_state_transition(
                 "crew_ready",
