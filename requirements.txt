@@ -1,0 +1,9 @@
+python-dotenv
+requests
+pydantic
+click
+colorama
+crewai
+crewai-tools
+langchain
+langchain-community
