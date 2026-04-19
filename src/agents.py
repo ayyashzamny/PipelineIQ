@@ -226,6 +226,45 @@ class PipelineTaskChain:
         return tasks
 
 
+class AnalysisTaskChain:
+    """Defines the task chain for AI analysis of an existing failure."""
+    
+    @staticmethod
+    def create_analysis_tasks(error_context: str) -> list:
+        """Create tasks for AI analysis only."""
+        
+        tasks = []
+        
+        # Task 1: Analyze Errors (Input from existing log)
+        task1 = Task(
+            description=f"Analyze the following pipeline failure context:\n\n{error_context}\n\n"
+                        "Parse the error logs, categorize the error type, and determine root cause.",
+            expected_output="Error analysis including: category, severity, root cause, and error summary",
+            agent=ErrorAnalyzerAgent.create_agent()
+        )
+        tasks.append(task1)
+        
+        # Task 2: Generate Solutions
+        task2 = Task(
+            description="Based on the error analysis, generate comprehensive remediation plan. "
+                        "Create specific fix steps, prevention recommendations, and complexity assessment.",
+            expected_output="Remediation plan with fix steps, prevention tips, and complexity level",
+            agent=SolutionGeneratorAgent.create_agent()
+        )
+        tasks.append(task2)
+        
+        # Task 3: Notify Team
+        task3 = Task(
+            description="Format and send notification with complete failure context and solutions. "
+                        "Include pipeline ID, failed stage, error summary, and all recommendations.",
+            expected_output="Notification sent with complete failure report and remediation steps",
+            agent=NotificationAgent.create_agent()
+        )
+        tasks.append(task3)
+        
+        return tasks
+
+
 class MultiAgentPipeline:
     """Main multi-agent system orchestrator."""
     
@@ -328,6 +367,107 @@ class MultiAgentPipeline:
                 {"error": str(e)}
             )
             
+            return {
+                "status": "error",
+                "error": str(e)
+            }
+
+
+class TriggeredAIAgent:
+    """Orchestrator for AI analysis triggered by a pipeline failure."""
+    
+    def __init__(self, error_report: Dict[str, Any]):
+        """Initialize with error report data."""
+        self.error_report = error_report
+        self.execution_id = error_report.get("pipeline_id", "unknown")
+        
+        # Prepare context
+        error_context = f"""
+        PIPELINE ID: {self.execution_id}
+        FAILED STAGE: {error_report.get('failed_stage', 'Unknown')}
+        ERROR MESSAGE: {error_report.get('error_message', 'No error message')}
+        OUTPUT SNIPPET: {error_report.get('output', '')[:1000]}
+        """
+        
+        self.tasks = AnalysisTaskChain.create_analysis_tasks(error_context)
+        self.crew = None
+        
+        obs_logger.log_state_transition(
+            "triggered",
+            "initialized",
+            {"pipeline_id": self.execution_id, "num_tasks": len(self.tasks)}
+        )
+    
+    def initialize_crew(self) -> None:
+        """Initialize CrewAI crew."""
+        agents = [
+            ErrorAnalyzerAgent.create_agent(),
+            SolutionGeneratorAgent.create_agent(),
+            NotificationAgent.create_agent()
+        ]
+        
+        self.crew = Crew(
+            agents=agents,
+            tasks=self.tasks,
+            verbose=True
+        )
+    
+    def execute(self) -> Dict[str, Any]:
+        """Execute the AI analysis and notification."""
+        if not self.crew:
+            self.initialize_crew()
+        
+        logger.info("\n" + "="*70)
+        logger.info(f"STARTING AI ANALYSIS FOR PIPELINE: {self.execution_id}")
+        logger.info("="*70)
+        
+        obs_logger.log_event_start("ai_system", "triggered_analysis")
+        
+        try:
+            result = self.crew.kickoff()
+            
+            # Send notification using the extracted info
+            logger.info("\n" + "="*70)
+            logger.info("ANALYSIS COMPLETE - Sending notification...")
+            logger.info("="*70)
+            
+            # Prepare AI analysis data for email
+            ai_analysis = {
+                "analysis": str(result),
+                "recommendations": [
+                    "Follow AI-generated fix steps",
+                    "Review failed stage logs",
+                    "Verify code changes"
+                ],
+                "model": "Ollama (llama2:latest)"
+            }
+            
+            from src.tools import NotificationTools
+            success = NotificationTools.send_notification(
+                pipeline_id=self.execution_id,
+                failed_stage=self.error_report.get('failed_stage', 'Pipeline'),
+                error_message=self.error_report.get('error_message', 'Execution failure'),
+                ai_analysis=ai_analysis
+            )
+            
+            obs_logger.log_state_transition(
+                "initialized",
+                "execution_complete",
+                {"status": "success", "email_sent": success}
+            )
+            
+            return {
+                "status": "success",
+                "result": result,
+                "email_sent": success
+            }
+        except Exception as e:
+            logger.error(f"AI Analysis failed: {e}")
+            obs_logger.log_state_transition(
+                "initialized",
+                "execution_failed",
+                {"error": str(e)}
+            )
             return {
                 "status": "error",
                 "error": str(e)

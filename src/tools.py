@@ -361,12 +361,20 @@ class NotificationTools:
             "num_recs": len(recommendations)
         })
         
+        # Basic sanitization for security
+        sanitized_summary = error_summary
+        for secret_pattern in ["API_KEY", "PASSWORD", "SECRET", "TOKEN"]:
+            if secret_pattern in sanitized_summary.upper():
+                # Simple replacement for demo purposes
+                import re
+                sanitized_summary = re.sub(rf"{secret_pattern}=[^ \n\r]+", f"{secret_pattern}=****", sanitized_summary, flags=re.IGNORECASE)
+
         message = f"""
 Pipeline Failure Alert
 ======================
 Pipeline ID: {pipeline_id}
 Failed Stage: {failed_stage}
-Error: {error_summary}
+Error: {sanitized_summary}
 
 Recommendations:
 {chr(10).join(f"- {rec}" for rec in recommendations[:5])}

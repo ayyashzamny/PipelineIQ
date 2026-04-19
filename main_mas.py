@@ -71,6 +71,21 @@ def run(fail_at):
 
 
 @cli.command()
+@click.argument('fail_at', default='Test')
+def run_pipeline(fail_at):
+    """Run the pipeline manually and save failure report."""
+    from run_pipeline import run_manual_pipeline
+    run_manual_pipeline(fail_at=fail_at)
+
+
+@cli.command()
+def trigger_agent():
+    """Trigger the AI Agent system to analyze the last failure."""
+    from run_agent import run_triggered_agent
+    run_triggered_agent()
+
+
+@cli.command()
 def check_config():
     """Validate system configuration."""
     logger.info("Checking configuration...")

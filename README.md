@@ -103,7 +103,18 @@ cp .env.example .env
 # Edit .env with your Gmail credentials
 ```
 
-### Run Multi-Agent System
+### Run via Manual Trigger (Recommended for Viva)
+This approach allows you to show the separation between the pipeline and the agent.
+
+```bash
+# 1. Run the pipeline manually (forces failure at 'Test' stage by default)
+python run_pipeline.py Test
+
+# 2. After pipeline fails, trigger the AI Agentic System
+python run_agent.py
+```
+
+### Run Full System (Automated)
 ```bash
 python main_mas.py run
 ```

@@ -62,18 +62,17 @@ NARRATOR: "All stages passed successfully. The system detected
 no issues and reported success."
 ```
 
-## Scene 4: Pipeline Execution - Failure Case (60 seconds)
+## Scene 4: Pipeline Execution - Manual Run (60 seconds)
 
 ```
-[SCREEN: Terminal running pipeline with forced failure]
+[SCREEN: Terminal]
 
-$ python main_mas.py run --fail-at Test
+$ python run_pipeline.py Test
 
 ============================================================
-Starting Multi-Agent Pipeline Monitoring System
+MANUAL PIPELINE EXECUTION
 ============================================================
 
-[AGENT 1: Pipeline Monitor]
 ✓ Build stage PASSED (2.1s)
 ✓ Lint stage PASSED (1.5s)
 ✗ Test stage FAILED
@@ -81,22 +80,37 @@ Starting Multi-Agent Pipeline Monitoring System
 ERROR: Test assertion failed
 Output: Expected 5 but got 3
 
-[SYSTEM] Pipeline failure detected. Starting analysis...
+PIPELINE FAILED at stage: Test
+Failure report saved to: logs/last_pipeline_failure.json
+You can now run 'python run_agent.py' to analyze this failure.
 
-NARRATOR: "Pipeline detected a failure in the Test stage. 
-Now the Error Analyzer Agent takes over."
+NARRATOR: "The pipeline is run manually. Here we see it failed 
+at the Test stage. I have now disconnected the agent from the 
+live pipeline run to show you how the AI system works independently."
 ```
 
-## Scene 5: Error Analysis (60 seconds)
+## Scene 5: Starting the Agentic AI System (60 seconds)
 
 ```
-[SCREEN: Showing agent output]
+[SCREEN: Terminal]
+
+$ python run_agent.py
+
+============================================================
+AGENTIC AI SYSTEM - TRIGGERED ANALYSIS
+============================================================
+
+STARTING AI ANALYSIS FOR PIPELINE: 20260417_214530
 
 [AGENT 2: Error Analyzer] ▶ Analyzing error...
   ├─ Parsing error logs...
   ├─ Error Category: test_error
   ├─ Severity: HIGH
   └─ Root Cause: "Test assertion failure - logic mismatch"
+
+NARRATOR: "Now I trigger the Agentic AI system manually. 
+It picks up the failure report and starts its multi-agent chain."
+```
 
 NARRATOR: "The Error Analyzer parsed the logs and determined:
 - This is a test error (not a build or lint issue)
