@@ -13,14 +13,22 @@ class OllamaAgent:
     """AI Agent powered by Ollama for error analysis."""
     
     def __init__(self):
-        self.api_url = Config.OLLAMA_API_URL
+        self.api_url = Config.OLLAMA_API_URL.rstrip("/")
+        self.native_api_url = self._resolve_native_api_url(self.api_url)
         self.model = Config.OLLAMA_MODEL
         self.timeout = 60
+
+    @staticmethod
+    def _resolve_native_api_url(api_url: str) -> str:
+        """Support either Ollama root URLs or OpenAI-compatible `/v1` URLs."""
+        if api_url.endswith("/v1"):
+            return api_url[:-3]
+        return api_url
     
     def check_connection(self) -> bool:
         """Check if Ollama is running."""
         try:
-            response = requests.get(f"{self.api_url}/api/tags", timeout=5)
+            response = requests.get(f"{self.native_api_url}/api/tags", timeout=5)
             return response.status_code == 200
         except Exception as e:
             logger.error(f"Cannot connect to Ollama: {e}")
@@ -48,7 +56,7 @@ class OllamaAgent:
         
         try:
             response = requests.post(
-                f"{self.api_url}/api/generate",
+                f"{self.native_api_url}/api/generate",
                 json={
                     "model": self.model,
                     "prompt": prompt,

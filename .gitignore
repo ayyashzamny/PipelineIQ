@@ -24,3 +24,6 @@ venv/
 logs/
 *.log
 .DS_Store
+.ollama-home/
+.ollama-models/
+ollama-standalone/
