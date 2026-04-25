@@ -24,26 +24,26 @@ A locally-hosted **Multi-Agent System (MAS)** that autonomously monitors CI/CD p
 
 ## 🎯 Core Features
 
-### Multi-Agent Orchestration (15%)
+### Multi-Agent Orchestration
 - **4 Distinct Agents** with specialized roles
 - Agents communicate via shared context
 - Sequential task execution with state transitions
 - CrewAI framework for orchestration
 
-### Tool Integration (10%)
+### Tool Integration 
 - Custom Python tools with type hints & docstrings
 - Pipeline execution tools
 - Error analysis tools  
 - Solution generation tools
 - Notification tools
 
-### State Management (10%)
+### State Management
 - Global context shared across all agents
 - Dataclass-based state objects
 - State transitions logged and tracked
 - Zero context loss between agents
 
-### Observability (10%)
+### Observability
 - JSONL execution logs
 - Event tracking (agent start/end, tool calls, decisions)
 - Complete execution traces
